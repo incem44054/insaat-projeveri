@@ -2,8 +2,8 @@
 """
 İnşaat Proje Maliyeti Tahmin Aracı
 Hafta 2'de kurduğumuz lineer regresyon modellerinin "gerçek kullanım ortamı".
-Kod bilmeyen biri bile bu ekrandan tahmini maliyeti öğrenebilir.
 """
+import os
 import json
 import joblib
 import numpy as np
@@ -19,70 +19,128 @@ st.set_page_config(
     layout="centered",
 )
 
-PRIMARY = "#D97706"  # İnşaat turuncusu (Modern Amber)
-NAVY = "#1F2937"     # Koyu gri/Lacivert (Slate)
-AMBER = "#F59E0B"
-GREEN = "#10B981"
-RED = "#EF4444"
-
-st.markdown(f"""
+st.markdown("""
 <style>
-    .main {{ background-color: #F9FAFB; }}
-    .stApp header {{ background-color: transparent; }}
-    h1 {{ color: {NAVY}; }}
-    .app-header {{
-        background-color: {NAVY};
+    /* 1. ANA ARKA PLAN - MOR */
+    .stApp, .main {
+        background-color: #581C87 !important; /* Derin Asil Mor */
+    }
+    
+    /* Ana sayfadaki tüm metinler - Beyaz / Açık Lila */
+    .stApp h1, .stApp h2, .stApp h3, .stApp p, .stApp label, .stApp span, .stApp div {
+        color: #F8FAFC !important;
+    }
+
+    /* 2. BAŞLIK KUTUSU (Koyu Gece Moru) */
+    .app-header {
+        background-color: #2E1065 !important; 
         padding: 1.3rem 1.6rem;
         border-radius: 10px;
         margin-bottom: 1.2rem;
-        border-left: 5px solid {PRIMARY};
-    }}
-    .app-header h1 {{ color: white; margin: 0; font-size: 1.6rem; }}
-    .app-header p {{ color: #D1D5DB; margin: 0.3rem 0 0 0; font-size: 0.95rem; }}
-    .student-info {{
-        background-color: white;
-        padding: 1rem;
-        border-radius: 8px;
-        border: 1px solid #E5E7EB;
-        margin-bottom: 1rem;
-        font-size: 0.9rem;
-    }}
-    .student-info strong {{ color: {PRIMARY}; }}
-    .result-box {{
-        background-color: {PRIMARY};
-        color: white;
+        border-left: 5px solid #10B981;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+    }
+    .app-header h1 { color: white !important; margin: 0; font-size: 1.6rem; }
+    .app-header p { color: #E9D5FF !important; margin: 0.4rem 0 0 0; font-size: 0.95rem; font-weight: 500; }
+
+    /* 3. SAYI VE VERİ GİRİLEN KUTULAR - Beyaz Arka Plan, Siyah Yazı */
+    div[data-baseweb="input"] > div {
+        background-color: #FFFFFF !important;
+        border: 2px solid #CBD5E1 !important;
+    }
+    div[data-baseweb="input"] input {
+        color: #000000 !important;
+        background-color: #FFFFFF !important;
+        -webkit-text-fill-color: #000000 !important;
+        font-weight: bold !important;
+    }
+    div[data-baseweb="input"] svg {
+        fill: #000000 !important;
+    }
+    
+    /* Seçim Kutusu (Selectbox) */
+    div[data-baseweb="select"] > div {
+        background-color: #FFFFFF !important;
+    }
+    div[data-baseweb="select"] span {
+        color: #000000 !important;
+    }
+
+    /* 4. TAHMİN ET BUTONU - PARLAK ZÜMRÜT YEŞİLİ */
+    .stButton > button {
+        background-color: #10B981 !important; 
+        color: white !important;
+        border: none !important;
+        font-size: 1.1rem !important;
+        font-weight: bold !important;
+        padding: 0.75rem 0 !important;
+        transition: all 0.2s ease-in-out;
+    }
+    .stButton > button:hover {
+        background-color: #059669 !important; 
+        transform: scale(1.02);
+    }
+
+    /* 5. SONUÇ KUTULARI */
+    .result-box {
+        background-color: #2E1065 !important;
+        color: white !important;
         padding: 1.4rem;
         border-radius: 10px;
         text-align: center;
         margin: 1rem 0;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    }}
-    .result-box .value {{ font-size: 2.3rem; font-weight: 700; }}
-    .result-box .label {{ font-size: 0.95rem; opacity: 0.85; }}
-    .warn-box {{
-        background-color: #FEF2F2;
-        border: 1.5px solid {RED};
-        color: {RED};
+        border: 2px solid #10B981 !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.25);
+    }
+    .result-box .value { font-size: 2.3rem !important; font-weight: 700 !important; color: #34D399 !important; }
+    .result-box .label { font-size: 0.95rem !important; opacity: 0.9 !important; color: white !important; }
+    
+    .warn-box {
+        background-color: #FEF2F2 !important;
+        border: 1.5px solid #EF4444 !important;
+        color: #DC2626 !important;
         padding: 0.9rem 1.1rem;
         border-radius: 8px;
         font-size: 0.92rem;
         margin-top: 0.6rem;
-    }}
-    .ok-box {{
-        background-color: #ECFDF5;
-        border: 1.5px solid {GREEN};
-        color: {GREEN};
+    }
+    .ok-box {
+        background-color: #ECFDF5 !important;
+        border: 1.5px solid #10B981 !important;
+        color: #059669 !important;
         padding: 0.9rem 1.1rem;
         border-radius: 8px;
         font-size: 0.92rem;
         margin-top: 0.6rem;
-    }}
-    footer {{visibility: hidden;}}
+    }
+
+    /* 6. SOL KENAR ÇUBUĞU (SIDEBAR) - YEŞİL */
+    [data-testid="stSidebar"] {
+        background-color: #047857 !important; /* Zümrüt Yeşili */
+    }
+    
+    /* Sol menü içi metinler ve başlıklar - Beyaz */
+    [data-testid="stSidebar"] p, 
+    [data-testid="stSidebar"] div, 
+    [data-testid="stSidebar"] span, 
+    [data-testid="stSidebar"] label,
+    [data-testid="stSidebar"] h1,
+    [data-testid="stSidebar"] h2,
+    [data-testid="stSidebar"] h3 {
+        color: #FFFFFF !important;
+    }
+    
+    [data-testid="stSidebar"] hr {
+        border-color: rgba(255, 255, 255, 0.3) !important;
+    }
+
+    footer {visibility: hidden;}
 </style>
 """, unsafe_allow_html=True)
 
-
-
+# ------------------------------------------------------------------
+# Başlık Bölümü
+# ------------------------------------------------------------------
 st.markdown("""
 <div class="app-header">
     <h1>🏗️ İnşaat Proje Maliyeti Tahmin Aracı</h1>
@@ -91,13 +149,14 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ------------------------------------------------------------------
-# Model ve metaveriyi yükle (Hücre 6'da kaydettiğimiz dosyalar)
+# Model ve metaveriyi yükle (Esnek dizin kontrolü)
 # ------------------------------------------------------------------
 @st.cache_resource
 def yukle():
-    basit = joblib.load("models/maliyet_modeli_basit.pkl")
-    gelismis = joblib.load("models/maliyet_modeli_gelismis.pkl")
-    with open("models/meta.json", encoding="utf-8") as f:
+    prefix = "models/" if os.path.exists("models/meta.json") else ""
+    basit = joblib.load(f"{prefix}maliyet_modeli_basit.pkl")
+    gelismis = joblib.load(f"{prefix}maliyet_modeli_gelismis.pkl")
+    with open(f"{prefix}meta.json", encoding="utf-8") as f:
         meta = json.load(f)
     return basit, gelismis, meta
 
@@ -105,8 +164,9 @@ try:
     model_basit, model_gelismis, meta = yukle()
 except FileNotFoundError:
     st.error(
-        "Model dosyaları bulunamadı. Önce `python train_models.py` çalıştırarak "
-        "modelleri eğitip `models/` klasörüne kaydedin."
+        "Model dosyaları bulunamadı. Lütfen 'maliyet_modeli_basit.pkl', "
+        "'maliyet_modeli_gelismis.pkl' ve 'meta.json' dosyalarının GitHub'da "
+        "mevcut olduğundan emin olun."
     )
     st.stop()
 
@@ -208,9 +268,9 @@ if st.button("💰 Maliyeti Tahmin Et", type="primary", use_container_width=True
 
     if uyarilar:
         st.markdown(f"""
-        <div class="result-box" style="background-color:{RED};">
-            <div class="value">{tahmin:,.0f} TL</div>
-            <div class="label">Tahmini Toplam Maliyet — GÜVENİLİR DEĞİL</div>
+        <div class="result-box" style="background-color:#FEF2F2 !important; border: 2px solid #EF4444 !important;">
+            <div class="value" style="color: #DC2626 !important;">{tahmin:,.0f} TL</div>
+            <div class="label" style="color: #DC2626 !important;">Tahmini Toplam Maliyet — GÜVENİLİR DEĞİL</div>
         </div>
         """, unsafe_allow_html=True)
         st.markdown(
