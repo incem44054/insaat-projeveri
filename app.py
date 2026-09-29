@@ -41,7 +41,7 @@ st.markdown("""
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
     }
     .app-header h1 { color: white !important; margin: 0; font-size: 1.6rem; }
-    .app-header p { color: #E9D5FF !important; margin: 0.4rem 0 0 0; font-size: 0.95rem; font-weight: 500; }
+    .app-header p { color: #E9D5FF !important; margin: 0.4rem 0 0 0; font-size: 1.05rem; font-weight: 500; }
 
     /* 3. SAYI VE VERİ GİRİLEN KUTULAR - Beyaz Arka Plan, Siyah Yazı */
     div[data-baseweb="input"] > div {
@@ -139,12 +139,12 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ------------------------------------------------------------------
-# Başlık Bölümü
+# Başlık ve Öğrenci Bilgileri Bölümü
 # ------------------------------------------------------------------
 st.markdown("""
 <div class="app-header">
     <h1>🏗️ İnşaat Proje Maliyeti Tahmin Aracı</h1>
-    <p>İnşaat Mühendisliğinde Yapay Zekâ Uygulamaları — Hafta 2 Lab Projesi</p>
+    <p>2023232026 - Öznur Büyüktaş - 0545 372 92 88</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -178,7 +178,7 @@ model_secimi = st.sidebar.radio(
     "Hangi modeli kullanmak istersiniz?",
     ["Basit Model (Hücre 5)", "Gelişmiş Model (Hücre 5 — Devam)"],
     help="Basit model sadece alan ve kat sayısını kullanır. Gelişmiş model "
-         "zemin sınıfı ve inşaat yılını da ekler (bkz. Hafta 2 ders notu).",
+         "zemin sınıfı ve inşaat yılını da ekler.",
 )
 gelismis_mi = model_secimi.startswith("Gelişmiş")
 
@@ -191,8 +191,7 @@ if gelismis_mi:
     st.sidebar.metric("Test MAE", f"{m['mae']:,.0f} TL")
     st.sidebar.caption(
         "⚠️ Train R² ile Test R² arasındaki büyük fark, bu modelin "
-        "**aşırı öğrenme (overfitting)** riski taşıdığını gösterir — "
-        "Hafta 2'de birlikte incelediğimiz konu tam olarak budur."
+        "**aşırı öğrenme (overfitting)** riski taşıdığını gösterir."
     )
 else:
     m = meta["basit_model"]
@@ -233,7 +232,7 @@ if gelismis_mi:
         )
 
 # ------------------------------------------------------------------
-# Ekstrapolasyon kontrolü (Hafta 2, "Modelin Sınırlarını Bilmek")
+# Ekstrapolasyon kontrolü
 # ------------------------------------------------------------------
 def araligin_disinda_mi(deger, anahtar):
     lo, hi = meta[anahtar]["min"], meta[anahtar]["max"]
@@ -310,13 +309,10 @@ Basit model şu formülü kullanır:
 **Maliyet = {b['alan_katsayisi']:,.0f} × Alan + {b['kat_katsayisi']:,.0f} × Kat + sabit**
             """)
         st.caption(
-            "Not: Bu bir karar destek aracıdır, karar verici değil. Nihai kararı her zaman mühendis verir "
-            "(bkz. Hafta 2 ders notu, Bölüm: Model Eğitildikten Sonra Nasıl Kullanılır?)."
+            "Not: Bu bir karar destek aracıdır, karar verici değil. Nihai kararı her zaman mühendis verir."
         )
 
 st.markdown("---")
 st.caption(
-    "Bu araç, Hafta 2 dersinde eğitilip Google Drive'a kaydedilen modelin "
-    "kod yazmayan kullanıcılar için bir web arayüzüne taşınmış hâlidir. "
-    "İnşaat Mühendisliğinde Yapay Zekâ Uygulamaları | 4. Sınıf | Güz Yarıyılı"
+    "2023232026 - Öznur Büyüktaş - 0545 372 92 88"
 )
